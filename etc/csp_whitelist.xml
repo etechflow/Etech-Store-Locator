@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<csp_whitelist xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+               xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Csp:etc/csp_whitelist.xsd">
+    <policies>
+        <policy id="img-src">
+            <values>
+                <value id="osm_tiles" type="host">*.tile.openstreetmap.org</value>
+                <value id="osm" type="host">*.openstreetmap.org</value>
+            </values>
+        </policy>
+        <policy id="connect-src">
+            <values>
+                <value id="postcodesio" type="host">api.postcodes.io</value>
+                <value id="nominatim" type="host">nominatim.openstreetmap.org</value>
+                <value id="osm_tiles_c" type="host">*.tile.openstreetmap.org</value>
+            </values>
+        </policy>
+        <policy id="script-src">
+            <values>
+                <value id="unpkg_s" type="host">unpkg.com</value>
+            </values>
+        </policy>
+        <policy id="style-src">
+            <values>
+                <value id="unpkg_st" type="host">unpkg.com</value>
+            </values>
+        </policy>
+    </policies>
+</csp_whitelist>

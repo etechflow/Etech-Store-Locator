@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
+    <menu>
+        <add id="Etechflow_StoreLocator::store_locator_root"
+             title="Store Locator"
+             module="Etechflow_StoreLocator"
+             sortOrder="100"
+             parent="Magento_Backend::stores"
+             resource="Etechflow_StoreLocator::stores"/>
+        <add id="Etechflow_StoreLocator::manage_stores"
+             title="Manage Stores"
+             module="Etechflow_StoreLocator"
+             sortOrder="10"
+             parent="Etechflow_StoreLocator::store_locator_root"
+             action="etechflow_storelocator/store/index"
+             resource="Etechflow_StoreLocator::stores"/>
+    </menu>
+</config>

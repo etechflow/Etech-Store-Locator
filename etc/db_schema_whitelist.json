@@ -1,0 +1,28 @@
+{
+    "etechflow_store_locator": {
+        "column": {
+            "store_id": true,
+            "name": true,
+            "street": true,
+            "city": true,
+            "county": true,
+            "postcode": true,
+            "phone": true,
+            "lat": true,
+            "lng": true,
+            "image": true,
+            "store_url": true,
+            "is_active": true,
+            "sort_order": true,
+            "created_at": true,
+            "updated_at": true
+        },
+        "index": {
+            "ETECHFLOW_STORE_LOCATOR_IS_ACTIVE": true,
+            "ETECHFLOW_STORE_LOCATOR_SORT_ORDER": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    }
+}

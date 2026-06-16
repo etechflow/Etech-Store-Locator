@@ -1,0 +1,163 @@
+<?xml version="1.0"?>
+<form xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+
+    <argument name="data" xsi:type="array">
+        <item name="js_config" xsi:type="array">
+            <item name="provider" xsi:type="string">etechflow_storelocator_store_form.etechflow_storelocator_store_form_data_source</item>
+        </item>
+        <item name="label" xsi:type="string" translate="true">Store Information</item>
+        <item name="template" xsi:type="string">templates/form/collapsible</item>
+    </argument>
+
+    <settings>
+        <buttons>
+            <button name="back" class="Etechflow\StoreLocator\Block\Adminhtml\Store\Edit\BackButton"/>
+            <button name="delete" class="Etechflow\StoreLocator\Block\Adminhtml\Store\Edit\DeleteButton"/>
+            <button name="save" class="Etechflow\StoreLocator\Block\Adminhtml\Store\Edit\SaveButton"/>
+        </buttons>
+        <namespace>etechflow_storelocator_store_form</namespace>
+        <dataScope>data</dataScope>
+        <deps>
+            <dep>etechflow_storelocator_store_form.etechflow_storelocator_store_form_data_source</dep>
+        </deps>
+    </settings>
+
+    <dataSource name="etechflow_storelocator_store_form_data_source">
+        <argument name="data" xsi:type="array">
+            <item name="js_config" xsi:type="array">
+                <item name="component" xsi:type="string">Magento_Ui/js/form/provider</item>
+            </item>
+        </argument>
+        <settings>
+            <submitUrl path="etechflow_storelocator/store/save"/>
+        </settings>
+        <dataProvider class="Etechflow\StoreLocator\Model\Store\DataProvider"
+                      name="etechflow_storelocator_store_form_data_source">
+            <settings>
+                <requestFieldName>store_id</requestFieldName>
+                <primaryFieldName>store_id</primaryFieldName>
+            </settings>
+        </dataProvider>
+    </dataSource>
+
+    <fieldset name="general">
+        <settings>
+            <label translate="true">General</label>
+            <collapsible>false</collapsible>
+            <opened>true</opened>
+        </settings>
+
+        <field name="store_id" formElement="hidden">
+            <settings>
+                <dataType>text</dataType>
+            </settings>
+        </field>
+
+        <field name="is_active" sortOrder="10" formElement="checkbox">
+            <settings>
+                <dataType>boolean</dataType>
+                <label translate="true">Active</label>
+                <dataScope>is_active</dataScope>
+            </settings>
+            <formElements>
+                <checkbox>
+                    <settings>
+                        <valueMap>
+                            <map name="false" xsi:type="number">0</map>
+                            <map name="true" xsi:type="number">1</map>
+                        </valueMap>
+                        <prefer>toggle</prefer>
+                        <default>1</default>
+                    </settings>
+                </checkbox>
+            </formElements>
+        </field>
+
+        <field name="name" sortOrder="20" formElement="input">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Store Name</label>
+                <dataScope>name</dataScope>
+                <validation>
+                    <rule name="required-entry" xsi:type="boolean">true</rule>
+                </validation>
+            </settings>
+        </field>
+
+        <field name="street" sortOrder="30" formElement="input">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Street</label>
+                <dataScope>street</dataScope>
+            </settings>
+        </field>
+
+        <field name="city" sortOrder="40" formElement="input">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">City</label>
+                <dataScope>city</dataScope>
+            </settings>
+        </field>
+
+        <field name="county" sortOrder="50" formElement="input">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">County</label>
+                <dataScope>county</dataScope>
+            </settings>
+        </field>
+
+        <field name="postcode" sortOrder="60" formElement="input">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Postcode</label>
+                <dataScope>postcode</dataScope>
+            </settings>
+        </field>
+
+        <field name="phone" sortOrder="70" formElement="input">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Phone</label>
+                <dataScope>phone</dataScope>
+            </settings>
+        </field>
+
+        <field name="lat" sortOrder="80" formElement="input">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Latitude</label>
+                <dataScope>lat</dataScope>
+                <notice translate="true">e.g. 51.7400</notice>
+            </settings>
+        </field>
+
+        <field name="lng" sortOrder="90" formElement="input">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Longitude</label>
+                <dataScope>lng</dataScope>
+                <notice translate="true">e.g. -0.1276</notice>
+            </settings>
+        </field>
+
+        <field name="store_url" sortOrder="100" formElement="input">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Store URL</label>
+                <dataScope>store_url</dataScope>
+                <notice translate="true">Relative path for View Store button (e.g. /stores/my-store).</notice>
+            </settings>
+        </field>
+
+        <field name="sort_order" sortOrder="110" formElement="input">
+            <settings>
+                <dataType>number</dataType>
+                <label translate="true">Sort Order</label>
+                <dataScope>sort_order</dataScope>
+            </settings>
+        </field>
+    </fieldset>
+</form>

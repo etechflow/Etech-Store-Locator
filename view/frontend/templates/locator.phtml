@@ -1,0 +1,700 @@
+<?php
+declare(strict_types=1);
+/** @var \Etechflow\StoreLocator\Block\Frontend\Locator $block */
+/** @var \Magento\Framework\Escaper $escaper */
+
+$apiKey    = $escaper->escapeHtmlAttr($block->getGoogleMapsApiKey());
+$searchUrl = $escaper->escapeUrl($block->getSearchUrl());
+
+$_om       = \Magento\Framework\App\ObjectManager::getInstance();
+$_storeMgr = $_om->get(\Magento\Store\Model\StoreManagerInterface::class);
+$_mediaUrl = $_storeMgr->getStore()->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_MEDIA);
+$_heroImg       = $_mediaUrl . 'wysiwyg/store-finder-hero.png';
+$_heroImgMobile = $_mediaUrl . 'wysiwyg/store-finder-hero-mobile-v1778508077.png';
+$_baseUrl  = $_storeMgr->getStore()->getBaseUrl();
+?>
+<style>
+/* ════════════════════════════════════════════════════════
+   Store Finder — Width strategy + mobile safety net
+   ════════════════════════════════════════════════════════ */
+.ks-locator{overflow-x:hidden;width:100%;max-width:100vw;margin-bottom:0}
+.ks-locator *{max-width:100%;box-sizing:border-box}
+/* Remove theme padding-bottom that creates empty white space below the page */
+body.storelocator-index-index .page-wrapper .columns,
+body.storelocator-index-index .page-main,
+body.storelocator-index-index main#maincontent,
+body.storelocator-index-index .column.main{padding-bottom:0 !important;margin-bottom:0 !important}
+.ks-locator img:not(.absolute){max-width:100%}
+.ks-locator img.absolute{height:100% !important;width:100% !important;object-fit:cover}
+.ks-locator [class*="flex"]>*,
+.ks-locator [class*="grid"]>*{min-width:0}
+@media(max-width:1023px){
+    .ks-locator .max-w-screen-2xl{padding-left:1.25rem;padding-right:1.25rem}
+}
+@media(max-width:767px){
+    .ks-locator .max-w-screen-2xl{padding-left:1rem;padding-right:1rem}
+}
+
+/* ════════════════════════════════════════════════════════
+   STORE FINDER HERO
+   ════════════════════════════════════════════════════════ */
+.ks-sf-hero{
+    position:relative;width:100%;
+    background-image:url('<?= /* @noEscape */ $_heroImg ?>');
+    background-size:cover;
+    background-position:right center;     /* crop from LEFT, keep right (keys + pin) visible */
+    background-repeat:no-repeat;
+    background-color:#0535F5;
+    min-height:280px;
+    overflow:hidden
+}
+.ks-sf-hero::before{
+    content:"";position:absolute;inset:0;
+    background:linear-gradient(90deg,
+        rgba(5,53,245,0.85) 0%,
+        rgba(5,53,245,0.55) 35%,
+        rgba(5,53,245,0.10) 70%,
+        rgba(5,53,245,0.00) 100%);
+    pointer-events:none
+}
+.ks-sf-hero-inner{
+    position:relative;z-index:1;
+    max-width:1536px;margin:0 auto;
+    padding:48px 32px 56px;
+    color:#fff
+}
+.ks-sf-breadcrumb{
+    display:flex;align-items:center;gap:6px;
+    font-size:12px;color:rgba(255,255,255,0.85);
+    margin-bottom:16px
+}
+.ks-sf-breadcrumb a{color:rgba(255,255,255,0.85);text-decoration:none;transition:color .15s}
+.ks-sf-breadcrumb a:hover{color:#fff}
+.ks-sf-breadcrumb svg{width:11px;height:11px;flex-shrink:0;opacity:0.6}
+.ks-sf-breadcrumb .current{color:#fff;font-weight:600}
+.ks-sf-title{
+    font-size:clamp(2rem,5vw,3.6rem);
+    font-weight:900;line-height:1;letter-spacing:-0.025em;
+    color:#fff;margin:0 0 14px;
+    text-shadow:0 2px 12px rgba(0,0,0,0.18)
+}
+.ks-sf-sub{
+    font-size:clamp(14px,1.5vw,17px);color:rgba(255,255,255,0.95);
+    line-height:1.5;margin:0 0 22px;max-width:640px;
+    font-weight:400
+}
+.ks-sf-badges{
+    display:flex;align-items:center;flex-wrap:wrap;
+    gap:0;margin-top:6px
+}
+.ks-sf-badge{
+    display:inline-flex;align-items:center;gap:8px;
+    color:#fff;font-size:14px;font-weight:600;
+    padding:0 22px;
+    border-right:1px solid rgba(255,255,255,0.25);
+    line-height:1
+}
+.ks-sf-badge:first-child{padding-left:0}
+.ks-sf-badge:last-child{border-right:none}
+.ks-sf-badge svg{width:18px;height:18px;flex-shrink:0;color:#fff}
+
+@media(max-width:1279px){
+    .ks-sf-hero{min-height:260px}
+    .ks-sf-hero-inner{padding:40px 28px 44px;max-width:100%}
+}
+@media(max-width:1023px){
+    .ks-sf-hero{min-height:230px;background-position:right -60px center}
+    .ks-sf-hero-inner{padding:32px 20px 36px}
+    .ks-sf-badge{padding:0 14px;font-size:12.5px}
+    .ks-sf-badge svg{width:16px;height:16px}
+}
+@media(max-width:767px){
+    /* Responsive hero — aspect-ratio keeps proportions across all mobile widths.
+       Image is 3168x1344 (~2.36:1). Use 2.36:1 aspect so cover fills perfectly. */
+    .ks-sf-hero{
+        min-height:0;
+        aspect-ratio:2.36/1;
+        background-color:#0535F5;
+        background-image:url('<?= /* @noEscape */ $_heroImgMobile ?>') !important;
+        background-size:cover !important;
+        background-position:center center !important;
+        background-repeat:no-repeat !important
+    }
+    .ks-sf-hero::before{display:none !important}
+    /* Inner padding scales with viewport (3% horiz, 3.5% vert) */
+    .ks-sf-hero-inner{
+        padding:3.2vw 3.5vw 3.2vw 3.5vw !important;
+        margin:0 !important;
+        max-width:55% !important;
+        width:55% !important;
+        display:flex;
+        flex-direction:column;
+        justify-content:center;
+        height:100%
+    }
+    .ks-sf-breadcrumb{
+        font-size:clamp(8px,2.4vw,11px);
+        margin-bottom:clamp(4px,1.5vw,8px);
+        gap:4px
+    }
+    .ks-sf-breadcrumb svg{width:clamp(8px,2vw,10px);height:clamp(8px,2vw,10px)}
+    .ks-sf-title{
+        font-size:clamp(0.85rem,4.2vw,1.4rem);
+        line-height:1.05;
+        margin-bottom:clamp(3px,1.3vw,6px);
+        text-shadow:none
+    }
+    .ks-sf-sub{
+        font-size:clamp(8.5px,2.4vw,12px);
+        line-height:1.35;
+        margin-bottom:clamp(6px,2vw,12px);
+        max-width:none;
+        color:rgba(255,255,255,0.92)
+    }
+    /* Badges — compact 3-col row, sizes scale fluidly */
+    .ks-sf-badges{
+        display:grid !important;
+        grid-template-columns:repeat(3,1fr);
+        max-width:none;
+        gap:clamp(3px,0.8vw,6px);
+        margin-top:clamp(3px,1vw,6px)
+    }
+    .ks-sf-badge{
+        padding:0 clamp(2px,0.8vw,5px);
+        font-size:clamp(5.5px,1.5vw,8px);
+        line-height:1.15;
+        border-right:1px solid rgba(255,255,255,0.35);
+        justify-content:center;
+        gap:3px
+    }
+    .ks-sf-badge:first-child{padding-left:0}
+    .ks-sf-badge:last-child{border-right:none;padding-right:0}
+    .ks-sf-badge svg{
+        width:clamp(7px,1.8vw,10px);
+        height:clamp(7px,1.8vw,10px)
+    }
+    .ks-sf-badge span{white-space:normal}
+}
+@media(max-width:479px){
+    .ks-locator .max-w-screen-2xl{padding-left:0.75rem;padding-right:0.75rem}
+}
+</style>
+
+<div x-data="storeLocator()" x-init="init()" class="ks-locator font-sans text-brand-dark">
+
+    <!-- ── HERO ── -->
+    <div class="ks-sf-hero">
+        <div class="ks-sf-hero-inner">
+            <nav class="ks-sf-breadcrumb">
+                <a href="<?= $escaper->escapeUrl($_baseUrl) ?>"><?= $escaper->escapeHtml(__('Home')) ?></a>
+                <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                <span class="current"><?= $escaper->escapeHtml(__('Store Locator')) ?></span>
+            </nav>
+            <h1 class="ks-sf-title">
+                <?= $escaper->escapeHtml(__('Store Locator')) ?>
+            </h1>
+            <p class="ks-sf-sub">
+                <?= $escaper->escapeHtml(__('Find your nearest Etechflow store and get directions instantly.')) ?>
+            </p>
+
+            <div class="ks-sf-badges">
+                <div class="ks-sf-badge">
+                    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M8 21h8M12 17v4"/>
+                        <path d="M17 4h3v4a4 4 0 0 1-4 4M7 4H4v4a4 4 0 0 0 4 4"/>
+                        <path d="M17 4H7v6a5 5 0 0 0 10 0V4z"/>
+                    </svg>
+                    <span><?= $escaper->escapeHtml(__('Expert Service')) ?></span>
+                </div>
+                <div class="ks-sf-badge">
+                    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        <path d="M9 12l2 2 4-4"/>
+                    </svg>
+                    <span><?= $escaper->escapeHtml(__('Trusted Stores')) ?></span>
+                </div>
+                <div class="ks-sf-badge">
+                    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="9"/>
+                        <circle cx="12" cy="12" r="5"/>
+                        <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+                    </svg>
+                    <span><?= $escaper->escapeHtml(__('Fast & Reliable')) ?></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── SEARCH PANEL ── -->
+    <div id="ks-store-locator" style="scroll-margin-top:90px" class="bg-white border-b border-gray-200 shadow-sm">
+        <div class="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8 py-4">
+
+            <!-- Mode tabs -->
+            <div class="flex gap-2 mb-4">
+                <button type="button" @click="mode = 'address'"
+                        :class="mode === 'address' ? 'bg-brand-blue text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-600 hover:border-brand-blue hover:text-brand-blue'"
+                        class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25s-7.5-4.108-7.5-11.25a7.5 7.5 0 1115 0z"/></svg>
+                    <?= $escaper->escapeHtml(__('Search by Address')) ?>
+                </button>
+                <button type="button" @click="mode = 'stores'; filterStores()"
+                        :class="mode === 'stores' ? 'bg-brand-blue text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-600 hover:border-brand-blue hover:text-brand-blue'"
+                        class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016c.896 0 1.7-.393 2.25-1.016a3.001 3.001 0 003.75.614m-16.5 0a3.004 3.004 0 01-.621-4.72L4.318 3.44A1.5 1.5 0 015.378 3h13.243a1.5 1.5 0 011.06.44l1.19 1.189a3 3 0 01-.621 4.72m-13.5 8.65h3.75a.75.75 0 00.75-.75V13.5a.75.75 0 00-.75-.75H6.75a.75.75 0 00-.75.75v3.75c0 .415.336.75.75.75z"/></svg>
+                    <?= $escaper->escapeHtml(__('Search by Stores')) ?>
+                </button>
+            </div>
+
+            <!-- Address search row -->
+            <div x-show="mode === 'address'" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-wrap">
+                <div class="relative flex-1 min-w-[200px]">
+                    <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25s-7.5-4.108-7.5-11.25a7.5 7.5 0 1115 0z"/></svg>
+                    </span>
+                    <input type="text"
+                           x-model="addressQuery"
+                           @keydown.enter="searchByAddress()"
+                           placeholder="<?= $escaper->escapeHtmlAttr(__('Enter postcode, town or address')) ?>"
+                           class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm text-brand-dark placeholder-gray-400 focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue transition bg-gray-50">
+                </div>
+                <div class="flex items-center gap-3 flex-none">
+                    <label class="text-xs text-gray-500 whitespace-nowrap"><?= $escaper->escapeHtml(__('Search radius')) ?></label>
+                    <input type="range" x-model.number="radius" min="1" max="100" step="1"
+                           class="w-32 accent-brand-blue cursor-pointer">
+                    <span class="text-xs font-bold text-brand-dark w-12" x-text="radius + ' mi'"></span>
+                </div>
+                <div class="flex gap-2 flex-none">
+                    <button type="button" @click="searchByAddress()" :disabled="loading"
+                            class="inline-flex items-center gap-2 bg-brand-red hover:bg-red-700 text-white text-xs font-bold px-5 py-2.5 rounded-lg uppercase tracking-wide transition disabled:opacity-60">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
+                        <?= $escaper->escapeHtml(__('Search')) ?>
+                    </button>
+                    <button type="button" @click="resetSearch()"
+                            class="inline-flex items-center gap-2 bg-white border border-gray-200 hover:border-gray-300 text-gray-600 text-xs font-bold px-4 py-2.5 rounded-lg uppercase tracking-wide transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
+                        <?= $escaper->escapeHtml(__('Reset')) ?>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Store name search row -->
+            <div x-show="mode === 'stores'" class="flex gap-3">
+                <div class="relative flex-1 max-w-md">
+                    <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
+                    </span>
+                    <input type="text"
+                           x-model="storeQuery"
+                           @input="filterStores()"
+                           placeholder="<?= $escaper->escapeHtmlAttr(__('Search by store name or city…')) ?>"
+                           class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm text-brand-dark placeholder-gray-400 focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue transition bg-gray-50">
+                </div>
+                <button type="button" @click="storeQuery = ''; filterStores()"
+                        class="inline-flex items-center gap-2 bg-white border border-gray-200 hover:border-gray-300 text-gray-600 text-xs font-bold px-4 py-2.5 rounded-lg uppercase tracking-wide transition">
+                    <?= $escaper->escapeHtml(__('Reset')) ?>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── MAIN CONTENT ── -->
+    <div class="bg-gray-50">
+        <div class="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8 pt-6 pb-8">
+
+            <!-- Loading -->
+            <div x-show="loading" class="flex items-center justify-center py-20">
+                <div class="w-10 h-10 border-4 border-gray-200 border-t-brand-blue rounded-full animate-spin"></div>
+            </div>
+
+            <!-- Error -->
+            <div x-show="!loading && error" class="bg-red-50 border border-red-200 rounded-xl p-6 text-center text-sm text-red-600" x-text="error"></div>
+
+            <!-- Results layout -->
+            <div x-show="!loading && !error" class="flex flex-col lg:flex-row gap-5">
+
+                <!-- ── LEFT: Store List ── -->
+                <div class="lg:w-[380px] flex-none flex flex-col gap-3">
+
+                    <!-- Count + sort -->
+                    <div class="flex items-center justify-between">
+                        <p class="text-sm font-semibold text-brand-dark">
+                            <span x-text="filteredStores.length" class="text-brand-blue font-extrabold"></span>
+                            <span x-text="filteredStores.length === 1 ? ' Store Found' : ' Stores Found'"></span>
+                        </p>
+                        <select x-model="sortBy" @change="sortStores()"
+                                class="text-xs border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-brand-dark focus:outline-none focus:border-brand-blue">
+                            <option value="nearest"><?= $escaper->escapeHtml(__('Nearest')) ?></option>
+                            <option value="name"><?= $escaper->escapeHtml(__('Name A–Z')) ?></option>
+                        </select>
+                    </div>
+
+                    <!-- No results -->
+                    <div x-show="filteredStores.length === 0" class="bg-white border border-gray-100 rounded-xl shadow-sm p-10 text-center">
+                        <svg class="w-10 h-10 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25s-7.5-4.108-7.5-11.25a7.5 7.5 0 1115 0z"/></svg>
+                        <p class="text-sm text-gray-500"><?= $escaper->escapeHtml(__('No stores found. Try expanding your search radius.')) ?></p>
+                    </div>
+
+                    <!-- Store cards (paginated) -->
+                    <template x-for="store in pagedStores" :key="store.id">
+                        <div class="bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-lg transition-shadow duration-200 overflow-hidden cursor-pointer"
+                             :class="selectedStore && selectedStore.id === store.id ? 'ring-2 ring-brand-blue border-transparent' : ''"
+                             @click="selectStore(store)">
+
+                            <div class="flex gap-3 p-3">
+                                <!-- Store image -->
+                                <div class="flex-none w-20 h-20 rounded-lg overflow-hidden bg-gray-100">
+                                    <img x-show="store.image" :src="store.image" :alt="store.name"
+                                         class="w-full h-full object-cover" loading="lazy">
+                                    <div x-show="!store.image" class="w-full h-full flex items-center justify-center">
+                                        <svg class="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016c.896 0 1.7-.393 2.25-1.016a3.001 3.001 0 003.75.614m-16.5 0a3.004 3.004 0 01-.621-4.72L4.318 3.44A1.5 1.5 0 015.378 3h13.243a1.5 1.5 0 011.06.44l1.19 1.189a3 3 0 01-.621 4.72m-13.5 8.65h3.75a.75.75 0 00.75-.75V13.5a.75.75 0 00-.75-.75H6.75a.75.75 0 00-.75.75v3.75c0 .415.336.75.75.75z"/></svg>
+                                    </div>
+                                </div>
+
+                                <!-- Info -->
+                                <div class="flex-1 min-w-0">
+                                    <h3 class="font-bold text-sm text-brand-dark leading-tight mb-1.5" x-text="store.name"></h3>
+                                    <p class="flex items-start gap-1.5 text-xs text-gray-500 mb-1">
+                                        <svg class="w-3.5 h-3.5 text-brand-red flex-none mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M9.69 18.933l.003.001C9.89 19.02 10 19 10 19s.11.02.308-.066l.002-.001.006-.003.018-.008a5.741 5.741 0 00.281-.14c.186-.096.446-.24.757-.433.62-.384 1.445-.966 2.274-1.765C15.302 14.988 17 12.493 17 9A7 7 0 103 9c0 3.492 1.698 5.988 3.355 7.584a13.731 13.731 0 002.273 1.765 11.842 11.842 0 00.976.544l.062.029.018.008.006.003zM10 11.25a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5z" clip-rule="evenodd"/></svg>
+                                        <span x-text="[store.street, store.city, store.county, store.postcode].filter(Boolean).join(', ')"></span>
+                                    </p>
+                                    <p x-show="store.phone" class="flex items-center gap-1.5 text-xs text-gray-500">
+                                        <svg class="w-3.5 h-3.5 text-brand-red flex-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z"/></svg>
+                                        <a :href="'tel:' + store.phone" @click.stop class="hover:text-brand-red transition" x-text="store.phone"></a>
+                                    </p>
+                                    <p x-show="store.distance !== null" class="text-xs text-brand-blue font-semibold mt-1">
+                                        <span x-text="store.distance !== null ? store.distance.toFixed(1) + ' mi away' : ''"></span>
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Action buttons -->
+                            <div class="border-t border-gray-100 p-3 flex flex-wrap gap-2">
+                                <a :href="'https://www.google.com/maps/dir/?api=1&destination=' + store.lat + ',' + store.lng"
+                                   target="_blank" rel="noopener" @click.stop
+                                   class="inline-flex items-center gap-1.5 bg-brand-red hover:bg-red-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition uppercase tracking-wide">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg>
+                                    <?= $escaper->escapeHtml(__('Get Directions')) ?>
+                                </a>
+                                <button type="button" @click.stop="openStreetView(store)"
+                                        class="inline-flex items-center gap-1.5 bg-white border border-gray-200 hover:border-brand-blue hover:text-brand-blue text-gray-600 text-xs font-bold px-3 py-2 rounded-lg transition uppercase tracking-wide">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                    <?= $escaper->escapeHtml(__('Street View')) ?>
+                                </button>
+                                <a x-show="store.store_url" :href="store.store_url" @click.stop
+                                   class="inline-flex items-center justify-center gap-1.5 bg-white border border-gray-200 hover:border-brand-blue hover:text-brand-blue text-gray-600 text-xs font-bold px-3 py-2 rounded-lg transition uppercase tracking-wide w-full">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg>
+                                    <?= $escaper->escapeHtml(__('View Store')) ?>
+                                </a>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Pagination -->
+                    <div x-show="totalPages > 1" class="flex items-center justify-center gap-1 pt-1">
+                        <button type="button" @click="currentPage > 1 && currentPage--"
+                                :disabled="currentPage === 1"
+                                class="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:border-brand-blue hover:text-brand-blue disabled:opacity-40 disabled:cursor-not-allowed transition text-xs">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/></svg>
+                        </button>
+                        <template x-for="p in totalPages" :key="p">
+                            <button type="button" @click="currentPage = p"
+                                    :class="currentPage === p ? 'bg-brand-blue text-white border-brand-blue' : 'bg-white border-gray-200 text-gray-600 hover:border-brand-blue hover:text-brand-blue'"
+                                    class="w-8 h-8 flex items-center justify-center rounded-lg border text-xs font-bold transition"
+                                    x-text="p"></button>
+                        </template>
+                        <button type="button" @click="currentPage < totalPages && currentPage++"
+                                :disabled="currentPage === totalPages"
+                                class="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:border-brand-blue hover:text-brand-blue disabled:opacity-40 disabled:cursor-not-allowed transition text-xs">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ── RIGHT: Map ── -->
+                <div class="flex-1 min-h-[420px] lg:min-h-0">
+                    <div id="ks-store-map" class="w-full h-full min-h-[420px] rounded-xl overflow-hidden border border-gray-200 shadow-sm bg-gray-100"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     STORE LOCATOR — Bottom feature strip (full-width responsive)
+     ════════════════════════════════════════════════════════ -->
+<style>
+.ks-sl-strip-wrap{width:100%;padding:0 16px 24px;box-sizing:border-box;}
+.ks-sl-strip{background:#fff;border:1px solid #EAECF0;border-radius:16px;box-shadow:0 4px 14px rgba(14,16,37,0.04);padding:18px 20px;width:100%;box-sizing:border-box;}
+.ks-sl-strip-grid{display:grid;grid-template-columns:1fr;gap:14px;align-items:start;}
+@media (min-width:640px){.ks-sl-strip-grid{grid-template-columns:1fr 1fr;gap:16px;}}
+@media (min-width:768px){.ks-sl-strip-grid{grid-template-columns:1.3fr 1fr 1fr 1fr 1.2fr;gap:18px;align-items:center;}}
+@media (min-width:1024px){.ks-sl-strip-grid{grid-template-columns:1.4fr 1fr 1fr 1fr 1.2fr;gap:22px;}}
+.ks-sl-strip-col{display:flex;align-items:flex-start;gap:12px;min-width:0;}
+@media (min-width:768px){.ks-sl-strip-col + .ks-sl-strip-col{border-left:1px solid #EEF0F4;padding-left:18px;}}
+@media (min-width:1024px){.ks-sl-strip-col + .ks-sl-strip-col{padding-left:22px;}}
+</style>
+<div class="ks-sl-strip-wrap" style="margin-top:-8px;">
+    <div class="ks-sl-strip">
+        <div class="ks-sl-strip-grid">
+
+            <!-- 1. Visit your local store (BLUE pin + RED button) -->
+            <div class="ks-sl-strip-col" style="gap:14px;">
+                <span style="flex:none;display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0535F5" stroke-width="1.7" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke="#C41818" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/>
+                    </svg>
+                </span>
+                <div style="min-width:0;">
+                    <p style="font-size:13.5px;font-weight:800;color:#0E1025;margin:0 0 3px;line-height:1.3;">Visit your local Etechflow store</p>
+                    <p style="font-size:11.5px;color:#6B7280;margin:0 0 10px;line-height:1.5;">Expert advice, quality products, and professional services you can trust.</p>
+                    <a href="#ks-store-locator" style="display:inline-flex;align-items:center;gap:6px;background:#C41818;color:#fff;font-size:11px;font-weight:800;padding:9px 14px;border-radius:6px;text-decoration:none;letter-spacing:0.04em;text-transform:uppercase;box-shadow:0 4px 10px rgba(196,24,24,0.25);">
+                        Find Your Nearest Store
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 2. Call before visiting (BLUE phone) -->
+            <div class="ks-sl-strip-col">
+                <span style="flex:none;display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0535F5" stroke-width="1.7" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z"/>
+                    </svg>
+                </span>
+                <div style="min-width:0;">
+                    <p style="font-size:13px;font-weight:800;color:#0E1025;margin:0 0 3px;line-height:1.3;">Call before visiting</p>
+                    <p style="font-size:11.5px;color:#6B7280;margin:0;line-height:1.5;">Check availability and opening hours</p>
+                </div>
+            </div>
+
+            <!-- 3. Click & Collect available (RED bag) -->
+            <div class="ks-sl-strip-col">
+                <span style="flex:none;display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#C41818" stroke-width="1.7" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z"/>
+                    </svg>
+                </span>
+                <div style="min-width:0;">
+                    <p style="font-size:13px;font-weight:800;color:#0E1025;margin:0 0 3px;line-height:1.3;">Click &amp; Collect available</p>
+                    <p style="font-size:11.5px;color:#6B7280;margin:0;line-height:1.5;">Order online and pick up in-store</p>
+                </div>
+            </div>
+
+            <!-- 4. Expert help in store (RED person) -->
+            <div class="ks-sl-strip-col">
+                <span style="flex:none;display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#C41818" stroke-width="1.7" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
+                    </svg>
+                </span>
+                <div style="min-width:0;">
+                    <p style="font-size:13px;font-weight:800;color:#0E1025;margin:0 0 3px;line-height:1.3;">Expert help in store</p>
+                    <p style="font-size:11.5px;color:#6B7280;margin:0;line-height:1.5;">Our team are here to help you</p>
+                </div>
+            </div>
+
+            <!-- 5. Auto locksmith assistance (BLUE key) -->
+            <div class="ks-sl-strip-col" style="align-items:center;gap:14px;">
+                <div style="display:flex;align-items:flex-start;gap:12px;flex:1;min-width:0;">
+                    <span style="flex:none;display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0535F5" stroke-width="1.7" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z"/>
+                        </svg>
+                    </span>
+                    <div style="min-width:0;">
+                        <p style="font-size:13px;font-weight:800;color:#0E1025;margin:0 0 3px;line-height:1.3;">Auto locksmith assistance</p>
+                        <p style="font-size:11.5px;color:#6B7280;margin:0;line-height:1.5;">Professional help for your vehicle</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+<script>
+function storeLocator() {
+    return {
+        allStores:      [],
+        filteredStores: [],
+        selectedStore:  null,
+        mode:           'address',
+        addressQuery:   '',
+        storeQuery:     '',
+        radius:         10,
+        sortBy:         'nearest',
+        userLat:        null,
+        userLng:        null,
+        currentPage:    1,
+        perPage:        5,
+        loading:        true,
+        error:          null,
+        map:            null,
+        markers:        [],
+
+        get totalPages() { return Math.max(1, Math.ceil(this.filteredStores.length / this.perPage)); },
+        get pagedStores() { const start = (this.currentPage - 1) * this.perPage; return this.filteredStores.slice(start, start + this.perPage); },
+
+        async init() {
+            try {
+                const res  = await fetch('<?= $searchUrl ?>');
+                const data = await res.json();
+                const list = Array.isArray(data) ? data : (data.stores || []);
+                this.allStores = list.map(s => ({ ...s, lat: parseFloat(s.lat), lng: parseFloat(s.lng), distance: null }));
+                this.filteredStores = [...this.allStores];
+            } catch (e) {
+                this.error = 'Could not load store data. Please try again later.';
+            }
+            this.loading = false;
+            await this.ensureLeaflet();
+            this.$nextTick(() => this.initMap());
+        },
+
+        ensureLeaflet() {
+            return new Promise(resolve => {
+                if (typeof L !== 'undefined') return resolve();
+                const t = setInterval(() => { if (typeof L !== 'undefined') { clearInterval(t); resolve(); } }, 100);
+                setTimeout(() => { clearInterval(t); resolve(); }, 6000);
+            });
+        },
+
+        initMap() {
+            if (typeof L === 'undefined' || this.map || !document.getElementById('ks-store-map')) return;
+            const center = this.allStores.length ? [this.allStores[0].lat, this.allStores[0].lng] : [52.6, -1.5];
+            this.map = L.map('ks-store-map', { scrollWheelZoom: false }).setView(center, this.allStores.length === 1 ? 13 : 6);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors', maxZoom: 19
+            }).addTo(this.map);
+            this.renderMarkers();
+            setTimeout(() => { if (this.map) { this.map.invalidateSize(); this.renderMarkers(); } }, 350);
+        },
+
+        renderMarkers() {
+            if (!this.map) return;
+            this.markers.forEach(m => this.map.removeLayer(m));
+            this.markers = [];
+            const pts = [];
+            this.filteredStores.forEach(store => {
+                if (!store.lat || !store.lng) return;
+                const marker = L.circleMarker([store.lat, store.lng], {
+                    radius: 9, fillColor: '#C41818', fillOpacity: 1, color: '#ffffff', weight: 2
+                }).addTo(this.map);
+                const address = [store.street, store.city, store.county, store.postcode].filter(Boolean).join(', ');
+                marker.bindPopup(
+                    '<div style="font-family:Inter,sans-serif;padding:2px;min-width:160px">' +
+                    '<p style="font-weight:700;font-size:13px;margin:0 0 4px">' + store.name + '</p>' +
+                    '<p style="font-size:11px;color:#6b7280;margin:0 0 6px">' + address + '</p>' +
+                    (store.phone ? '<p style="font-size:11px;color:#6b7280;margin:0">' + store.phone + '</p>' : '') +
+                    '</div>'
+                );
+                marker._ksName = store.name;
+                marker.on('click', () => this.selectStore(store));
+                this.markers.push(marker);
+                pts.push([store.lat, store.lng]);
+            });
+            if (pts.length === 1) { this.map.setView(pts[0], 13); }
+            else if (pts.length > 1) { this.map.fitBounds(pts, { padding: [40, 40] }); }
+        },
+
+        selectStore(store) {
+            this.selectedStore = store;
+            if (!this.map || !store.lat || !store.lng) return;
+            this.map.setView([store.lat, store.lng], 15);
+            const mk = this.markers.find(m => m._ksName === store.name);
+            if (mk) mk.openPopup();
+        },
+
+        async searchByAddress() {
+            const q = this.addressQuery.trim();
+            if (!q) return;
+            this.loading = true; this.error = null;
+            let lat = null, lng = null;
+            try {
+                let r = await fetch('https://api.postcodes.io/postcodes/' + encodeURIComponent(q));
+                let j = await r.json();
+                if (j.status === 200 && j.result) { lat = j.result.latitude; lng = j.result.longitude; }
+                if (lat === null) {
+                    r = await fetch('https://api.postcodes.io/outcodes/' + encodeURIComponent(q.replace(/\s+/g, '')));
+                    j = await r.json();
+                    if (j.status === 200 && j.result) { lat = j.result.latitude; lng = j.result.longitude; }
+                }
+                if (lat === null) {
+                    r = await fetch('https://api.postcodes.io/postcodes?q=' + encodeURIComponent(q) + '&limit=1');
+                    j = await r.json();
+                    if (j.result && j.result.length) { lat = j.result[0].latitude; lng = j.result[0].longitude; }
+                }
+                if (lat === null) {
+                    // Free-text fallback (town / street / full address) via OSM Nominatim, UK-biased.
+                    r = await fetch('https://nominatim.openstreetmap.org/search?format=json&countrycodes=gb&limit=1&q=' + encodeURIComponent(q));
+                    j = await r.json();
+                    if (Array.isArray(j) && j.length) { lat = parseFloat(j[0].lat); lng = parseFloat(j[0].lon); }
+                }
+            } catch (e) {}
+            this.loading = false;
+            if (lat === null) { this.error = 'Address not found. Please try a UK postcode or town.'; return; }
+            this.error = null;
+            this.userLat = lat; this.userLng = lng;
+            this.filteredStores = this.allStores
+                .map(s => ({ ...s, distance: (s.lat && s.lng) ? this.haversine(lat, lng, s.lat, s.lng) : null }))
+                .filter(s => s.distance !== null && s.distance <= this.radius)
+                .sort((a, b) => a.distance - b.distance);
+            this.currentPage = 1;
+            this.$nextTick(() => this.renderMarkers());
+        },
+
+        filterStores() {
+            const q = this.storeQuery.trim().toLowerCase();
+            this.filteredStores = q
+                ? this.allStores.filter(s =>
+                    s.name.toLowerCase().includes(q) ||
+                    (s.city && s.city.toLowerCase().includes(q)) ||
+                    (s.postcode && s.postcode.toLowerCase().includes(q))
+                  )
+                : [...this.allStores];
+            this.currentPage = 1;
+            this.$nextTick(() => this.renderMarkers());
+        },
+
+        sortStores() {
+            if (this.sortBy === 'name') {
+                this.filteredStores = [...this.filteredStores].sort((a, b) => a.name.localeCompare(b.name));
+            } else if (this.sortBy === 'nearest' && this.userLat !== null) {
+                this.filteredStores = [...this.filteredStores].sort((a, b) => (a.distance ?? 999) - (b.distance ?? 999));
+            }
+        },
+
+        resetSearch() {
+            this.addressQuery   = '';
+            this.storeQuery     = '';
+            this.userLat        = null;
+            this.userLng        = null;
+            this.error          = null;
+            this.radius         = 10;
+            this.filteredStores = this.allStores.map(s => ({ ...s, distance: null }));
+            this.currentPage    = 1;
+            this.selectedStore  = null;
+            this.$nextTick(() => this.renderMarkers());
+        },
+
+        openStreetView(store) {
+            if (!store.lat || !store.lng) return;
+            window.open('https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=' + store.lat + ',' + store.lng, '_blank');
+        },
+
+        haversine(lat1, lng1, lat2, lng2) {
+            const R = 3958.8; // miles
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLng = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dLat/2)**2 +
+                      Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        },
+    };
+}
+</script>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="" async></script>
