@@ -9,6 +9,9 @@
         <column xsi:type="varchar" name="county" nullable="true" length="255" comment="County"/>
         <column xsi:type="varchar" name="postcode" nullable="true" length="20" comment="Postcode"/>
         <column xsi:type="varchar" name="phone" nullable="true" length="50" comment="Phone Number"/>
+        <column xsi:type="varchar" name="email" nullable="true" length="255" comment="Email"/>
+        <column xsi:type="varchar" name="tagline" nullable="true" length="255" comment="Tagline"/>
+        <column xsi:type="varchar" name="hours" nullable="true" length="500" comment="Opening Hours"/>
         <column xsi:type="decimal" name="lat" nullable="true" scale="7" precision="10" comment="Latitude"/>
         <column xsi:type="decimal" name="lng" nullable="true" scale="7" precision="10" comment="Longitude"/>
         <column xsi:type="varchar" name="image" nullable="true" length="255" comment="Store Image"/>

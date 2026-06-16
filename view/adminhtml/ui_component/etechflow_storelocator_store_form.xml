@@ -125,6 +125,32 @@
             </settings>
         </field>
 
+        <field name="email" sortOrder="71" formElement="input">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Email</label>
+                <dataScope>email</dataScope>
+            </settings>
+        </field>
+
+        <field name="tagline" sortOrder="72" formElement="input">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Tagline</label>
+                <dataScope>tagline</dataScope>
+                <notice translate="true">Short strapline shown under the store name</notice>
+            </settings>
+        </field>
+
+        <field name="hours" sortOrder="73" formElement="textarea">
+            <settings>
+                <dataType>text</dataType>
+                <label translate="true">Opening Hours</label>
+                <dataScope>hours</dataScope>
+                <notice translate="true">e.g. Mon–Fri 9:00am–5:00pm</notice>
+            </settings>
+        </field>
+
         <field name="lat" sortOrder="80" formElement="input">
             <settings>
                 <dataType>text</dataType>
