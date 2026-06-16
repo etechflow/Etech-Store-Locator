@@ -549,7 +549,8 @@ function storeLocator() {
 
         async init() {
             try {
-                const res  = await fetch('<?= $searchUrl ?>');
+                const _u = '<?= $searchUrl ?>';
+                const res  = await fetch(_u + (_u.indexOf('?') === -1 ? '?' : '&') + '_=' + Date.now(), { cache: 'no-store' });
                 const data = await res.json();
                 const list = Array.isArray(data) ? data : (data.stores || []);
                 this.allStores = list.map(s => ({ ...s, lat: parseFloat(s.lat), lng: parseFloat(s.lng), distance: null }));
