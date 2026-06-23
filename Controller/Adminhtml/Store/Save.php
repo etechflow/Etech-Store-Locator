@@ -53,6 +53,11 @@ class Save extends Action implements HttpPostActionInterface
                 $this->messageManager->addErrorMessage(__('This store no longer exists.'));
                 return $resultRedirect->setPath('*/*/index');
             }
+        } else {
+            // New record: drop the empty store_id the form posts, otherwise the
+            // resource model issues a no-op UPDATE WHERE store_id='' (0 rows) and
+            // "succeeds" without inserting anything. Unsetting it forces an INSERT.
+            unset($data['store_id']);
         }
 
         // Cast numeric fields
