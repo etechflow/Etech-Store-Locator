@@ -35,6 +35,13 @@ class Save extends Action implements HttpPostActionInterface
             return $resultRedirect->setPath('*/*/index');
         }
 
+        // The ui_component form posts its fields under the 'data' scope
+        // (<dataScope>data</dataScope> in the form XML). Unwrap so the values
+        // map to real columns; this is a no-op for a flat post.
+        if (isset($data['data']) && is_array($data['data'])) {
+            $data = $data['data'];
+        }
+
         $storeId = isset($data['store_id']) ? (int) $data['store_id'] : null;
 
         $store = $this->storeFactory->create();
