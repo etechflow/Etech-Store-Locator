@@ -218,6 +218,63 @@ body.storelocator-index-index .column.main{padding-bottom:0 !important;margin-bo
 }
 </style>
 
+<style>
+/* ════════════════════════════════════════════════════════
+   Store Finder — theme-independent button / tab / map styling.
+   The finder's buttons, mode tabs and map height get their look from these
+   scoped rules (real brand hex values) instead of relying on the page's
+   Tailwind build to register the `brand` palette — which is absent on Luma
+   (runtime CDN) and on Hyvä (compiled config skips it). Scoped to .ks-locator
+   so the surrounding theme (header / nav / footer) is never touched. The
+   Tailwind utility classes are kept in the markup so a correctly-configured
+   Hyvä theme renders identically.
+   ════════════════════════════════════════════════════════ */
+.ks-locator .bg-brand-blue{background-color:#0535F5!important;}
+.ks-locator .bg-brand-red{background-color:#C41818!important;}
+.ks-locator .text-white{color:#fff!important;}
+.ks-locator .text-brand-dark{color:#0E1025!important;}
+.ks-locator .text-brand-blue{color:#0535F5!important;}
+.ks-locator .border-brand-blue{border-color:#0535F5!important;}
+.ks-locator .accent-brand-blue{accent-color:#0535F5!important;}
+
+/* Button + tab base — full structure so they render even when NO Tailwind loads (Luma) */
+.ks-locator .sf-btn,
+.ks-locator .sf-tab{
+    display:inline-flex!important;align-items:center;gap:.375rem;
+    padding:.625rem 1rem;border-radius:.5rem;
+    font-size:.75rem;font-weight:700;line-height:1.2;
+    text-transform:uppercase;letter-spacing:.04em;
+    border:1px solid transparent;cursor:pointer;text-decoration:none;
+    transition:background-color .15s,border-color .15s,color .15s,box-shadow .15s;
+    white-space:nowrap;
+}
+.ks-locator .sf-btn svg,
+.ks-locator .sf-tab svg{flex:none;}
+
+/* Primary (red) — Search, Get Directions */
+.ks-locator .sf-btn--red{
+    background-color:#C41818!important;color:#fff!important;
+    padding:.625rem 1.25rem;box-shadow:0 1px 2px rgba(196,24,24,.25);
+}
+.ks-locator .sf-btn--red:hover{background-color:#A31414!important;}
+.ks-locator .sf-btn--red:disabled{opacity:.6;cursor:default;}
+
+/* Ghost (white / outline) — Reset, Street View, View Store */
+.ks-locator .sf-btn--ghost{
+    background-color:#fff!important;border-color:#e5e7eb!important;color:#4b5563!important;
+}
+.ks-locator .sf-btn--ghost:hover{border-color:#0535F5!important;color:#0535F5!important;}
+
+/* Mode tabs — inactive default; the active state rides the bg-brand-blue class Alpine toggles */
+.ks-locator .sf-tab{padding:.5rem 1rem;background-color:#fff;border-color:#e5e7eb;color:#4b5563;}
+.ks-locator .sf-tab.bg-brand-blue{color:#fff!important;border-color:#0535F5!important;box-shadow:0 1px 2px rgba(5,53,245,.2);}
+.ks-locator .sf-tab:not(.bg-brand-blue):hover{border-color:#0535F5;color:#0535F5;}
+
+/* Map — height comes from min-h-[420px] (Tailwind) which is absent on Luma → give a real floor */
+.ks-locator .sf-map{min-height:420px!important;}
+@media(min-width:1024px){.ks-locator .sf-map{height:100%!important;}}
+</style>
+
 <?php /* Theme-agnostic boot. Hyvä already ships Tailwind + Alpine; on Luma (or any
        non-Tailwind theme) load them on THIS page only, so the store finder is styled
        and interactive on either theme. Preflight is disabled so Tailwind's global CSS
@@ -308,13 +365,13 @@ body.storelocator-index-index .column.main{padding-bottom:0 !important;margin-bo
             <div class="flex gap-2 mb-4">
                 <button type="button" @click="mode = 'address'"
                         :class="mode === 'address' ? 'bg-brand-blue text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-600 hover:border-brand-blue hover:text-brand-blue'"
-                        class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition">
+                        class="sf-tab inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25s-7.5-4.108-7.5-11.25a7.5 7.5 0 1115 0z"/></svg>
                     <?= $escaper->escapeHtml(__('Search by Address')) ?>
                 </button>
                 <button type="button" @click="mode = 'stores'; filterStores()"
                         :class="mode === 'stores' ? 'bg-brand-blue text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-600 hover:border-brand-blue hover:text-brand-blue'"
-                        class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition">
+                        class="sf-tab inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016c.896 0 1.7-.393 2.25-1.016a3.001 3.001 0 003.75.614m-16.5 0a3.004 3.004 0 01-.621-4.72L4.318 3.44A1.5 1.5 0 015.378 3h13.243a1.5 1.5 0 011.06.44l1.19 1.189a3 3 0 01-.621 4.72m-13.5 8.65h3.75a.75.75 0 00.75-.75V13.5a.75.75 0 00-.75-.75H6.75a.75.75 0 00-.75.75v3.75c0 .415.336.75.75.75z"/></svg>
                     <?= $escaper->escapeHtml(__('Search by Stores')) ?>
                 </button>
@@ -340,12 +397,12 @@ body.storelocator-index-index .column.main{padding-bottom:0 !important;margin-bo
                 </div>
                 <div class="flex gap-2 flex-none">
                     <button type="button" @click="searchByAddress()" :disabled="loading"
-                            class="inline-flex items-center gap-2 bg-brand-red hover:bg-red-700 text-white text-xs font-bold px-5 py-2.5 rounded-lg uppercase tracking-wide transition disabled:opacity-60">
+                            class="sf-btn sf-btn--red inline-flex items-center gap-2 bg-brand-red hover:bg-red-700 text-white text-xs font-bold px-5 py-2.5 rounded-lg uppercase tracking-wide transition disabled:opacity-60">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
                         <?= $escaper->escapeHtml(__('Search')) ?>
                     </button>
                     <button type="button" @click="resetSearch()"
-                            class="inline-flex items-center gap-2 bg-white border border-gray-200 hover:border-gray-300 text-gray-600 text-xs font-bold px-4 py-2.5 rounded-lg uppercase tracking-wide transition">
+                            class="sf-btn sf-btn--ghost inline-flex items-center gap-2 bg-white border border-gray-200 hover:border-gray-300 text-gray-600 text-xs font-bold px-4 py-2.5 rounded-lg uppercase tracking-wide transition">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
                         <?= $escaper->escapeHtml(__('Reset')) ?>
                     </button>
@@ -365,7 +422,7 @@ body.storelocator-index-index .column.main{padding-bottom:0 !important;margin-bo
                            class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm text-brand-dark placeholder-gray-400 focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue transition bg-gray-50">
                 </div>
                 <button type="button" @click="storeQuery = ''; filterStores()"
-                        class="inline-flex items-center gap-2 bg-white border border-gray-200 hover:border-gray-300 text-gray-600 text-xs font-bold px-4 py-2.5 rounded-lg uppercase tracking-wide transition">
+                        class="sf-btn sf-btn--ghost inline-flex items-center gap-2 bg-white border border-gray-200 hover:border-gray-300 text-gray-600 text-xs font-bold px-4 py-2.5 rounded-lg uppercase tracking-wide transition">
                     <?= $escaper->escapeHtml(__('Reset')) ?>
                 </button>
             </div>
@@ -455,17 +512,17 @@ body.storelocator-index-index .column.main{padding-bottom:0 !important;margin-bo
                             <div class="border-t border-gray-100 p-4 flex flex-wrap gap-2">
                                 <a :href="'https://www.google.com/maps/dir/?api=1&destination=' + store.lat + ',' + store.lng"
                                    target="_blank" rel="noopener" @click.stop
-                                   class="inline-flex items-center gap-1.5 bg-brand-red hover:bg-red-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition uppercase tracking-wide">
+                                   class="sf-btn sf-btn--red inline-flex items-center gap-1.5 bg-brand-red hover:bg-red-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition uppercase tracking-wide">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg>
                                     <?= $escaper->escapeHtml(__('Get Directions')) ?>
                                 </a>
                                 <button type="button" @click.stop="openStreetView(store)"
-                                        class="inline-flex items-center gap-1.5 bg-white border border-gray-200 hover:border-brand-blue hover:text-brand-blue text-gray-600 text-xs font-bold px-4 py-2.5 rounded-lg transition uppercase tracking-wide">
+                                        class="sf-btn sf-btn--ghost inline-flex items-center gap-1.5 bg-white border border-gray-200 hover:border-brand-blue hover:text-brand-blue text-gray-600 text-xs font-bold px-4 py-2.5 rounded-lg transition uppercase tracking-wide">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                                     <?= $escaper->escapeHtml(__('Street View')) ?>
                                 </button>
                                 <a x-show="store.store_url" :href="store.store_url" @click.stop
-                                   class="inline-flex items-center justify-center gap-1.5 bg-white border border-gray-200 hover:border-brand-blue hover:text-brand-blue text-gray-600 text-xs font-bold px-4 py-2.5 rounded-lg transition uppercase tracking-wide w-full">
+                                   class="sf-btn sf-btn--ghost inline-flex items-center justify-center gap-1.5 bg-white border border-gray-200 hover:border-brand-blue hover:text-brand-blue text-gray-600 text-xs font-bold px-4 py-2.5 rounded-lg transition uppercase tracking-wide w-full">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg>
                                     <?= $escaper->escapeHtml(__('View Store')) ?>
                                 </a>
@@ -496,7 +553,7 @@ body.storelocator-index-index .column.main{padding-bottom:0 !important;margin-bo
 
                 <!-- ── RIGHT: Map ── -->
                 <div class="flex-1 min-h-[420px] lg:min-h-0">
-                    <div id="ks-store-map" class="w-full h-full min-h-[420px] rounded-xl overflow-hidden border border-gray-200 shadow-sm bg-gray-100"></div>
+                    <div id="ks-store-map" class="sf-map w-full h-full min-h-[420px] rounded-xl overflow-hidden border border-gray-200 shadow-sm bg-gray-100"></div>
                 </div>
             </div>
         </div>
