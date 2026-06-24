@@ -713,7 +713,7 @@ function storeLocator() {
             this.loading = false;
             this._reveal();
             await this.ensureLeaflet();
-            this.$nextTick(() => this.initMap());
+            this.$nextTick(() => requestAnimationFrame(() => this.initMap()));
         },
 
         _reveal() {
@@ -741,7 +741,15 @@ function storeLocator() {
                 attribution: '&copy; OpenStreetMap contributors', maxZoom: 19
             }).addTo(this.map);
             this.renderMarkers();
-            setTimeout(() => { if (this.map) { this.map.invalidateSize(); this.renderMarkers(); } }, 350);
+            // Anti-FOUC reveals the finder from display:none and it lives in a flex column,
+            // so on a fast (full-page-cached) load Leaflet can measure a 0-size container
+            // (the classic grey box). Re-assert size after layout settles: next paint, a few
+            // delays, and whenever the container actually changes size (e.g. on reveal).
+            const _fixMap = () => { if (this.map) { this.map.invalidateSize(); this.renderMarkers(); } };
+            requestAnimationFrame(() => requestAnimationFrame(_fixMap));
+            [120, 400, 900, 1800].forEach(ms => setTimeout(_fixMap, ms));
+            const _mapEl = document.getElementById('ks-store-map');
+            if (window.ResizeObserver && _mapEl) { new ResizeObserver(_fixMap).observe(_mapEl); }
         },
 
         renderMarkers() {
